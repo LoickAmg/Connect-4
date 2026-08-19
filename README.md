@@ -1,26 +1,33 @@
 # Puissance 4 (Connect Four)
 
-Un Puissance 4 en Python/Pygame, axé sur la manipulation de grille et la logique de jeu : gravité des pions, détection de victoire (horizontale, verticale, diagonales), logique séparée du rendu (facile à tester unitairement), et une CI GitHub Actions qui lint + teste à chaque push.
+Un Puissance 4 en Python/Pygame, avec trois modes de jeu (local, IA, en ligne), axé sur la manipulation de grille, la logique de jeu et l'algorithmique (minimax), avec une logique séparée du rendu (facile à tester unitairement) et une CI GitHub Actions qui lint + teste à chaque push.
 
 ## Fonctionnalités
 
-- Grille 6x7 classique, gravité des pions à la souris
-- Prévisualisation du pion avant de jouer (survol de colonne)
+- Grille 6x7 classique, gravité des pions à la souris, prévisualisation avant de jouer
 - Détection de victoire dans les 4 directions (ligne, colonne, 2 diagonales) et match nul
+- **Mode local** : deux joueurs sur le même clavier/souris
+- **Mode contre l'IA** : minimax avec élagage alpha-bêta, 3 niveaux de difficulté (profondeur 2/4/6), calculée dans un thread séparé pour ne pas geler la fenêtre
+- **Mode multijoueur en ligne** : connexion directe pair-à-pair en sockets TCP (un joueur héberge, l'autre rejoint via son adresse IP), sans dépendance externe
 - Écran de fin de partie avec relance (`R`) sans quitter le jeu
-- Logique du plateau 100% testable sans fenêtre graphique
+- Logique du plateau, de l'IA et du réseau 100% testables sans fenêtre graphique
 
 ## Structure du projet
 
 ```
 connect-four/
 ├── src/
-│   ├── main.py       # point d'entrée
-│   ├── game.py         # boucle de jeu et rendu pygame
-│   ├── board.py          # logique pure du plateau (testable)
-│   └── settings.py         # constantes (grille, couleurs, tailles...)
+│   ├── main.py       # point d'entrée (affiche le menu puis lance la partie)
+│   ├── menu.py         # écran de menu (choix du mode, difficulté, IP)
+│   ├── game.py           # boucle de jeu et rendu pygame
+│   ├── ai.py               # IA minimax + élagage alpha-bêta (testable)
+│   ├── network.py            # connexion TCP pair-à-pair (testable)
+│   ├── board.py                 # logique pure du plateau (testable)
+│   └── settings.py                # constantes (grille, couleurs, tailles...)
 ├── tests/
-│   └── test_board.py        # tests unitaires (pytest)
+│   ├── test_board.py    # logique du plateau
+│   ├── test_ai.py         # l'IA prend un coup gagnant / bloque l'adversaire
+│   └── test_network.py      # échange de messages et détection de déconnexion
 ├── .github/workflows/ci.yml  # lint (ruff) + tests (pytest) sur push/PR
 ├── requirements.txt
 └── requirements-dev.txt
@@ -45,7 +52,22 @@ pip install -r requirements-dev.txt
 python -m src.main
 ```
 
-Commandes : clic gauche sur une colonne pour y jouer, `R` pour rejouer après un game over, `Échap` pour quitter.
+Un menu au clavier s'affiche pour choisir le mode :
+
+- `1` — deux joueurs en local
+- `2` — contre l'IA (puis `1`/`2`/`3` pour la difficulté)
+- `3` — multijoueur en ligne (`1` pour héberger, `2` pour rejoindre + saisir l'IP)
+
+En partie : clic gauche sur une colonne pour y jouer, `R` pour rejouer après une fin de partie, `Échap` pour quitter.
+
+### Multijoueur en ligne
+
+Le mode en ligne fonctionne en pair-à-pair, sans serveur tiers : un des deux
+joueurs choisit "Héberger" (le jeu ouvre un port TCP — `5555` par défaut — et
+attend), l'autre choisit "Rejoindre" et saisit l'adresse IP de l'hôte (et le
+port si besoin, ex. `192.168.1.10:5555`). Sur le même réseau local, l'IP
+locale de l'hôte suffit ; pour jouer via Internet, l'hôte doit rediriger le
+port 5555 sur sa box/routeur (ou utiliser un tunnel type ngrok/Tailscale).
 
 ## Lancer les tests
 
@@ -61,6 +83,6 @@ ruff check .
 
 ## Prochaines étapes possibles
 
-- Ajouter une IA simple (minimax) comme adversaire
-- Ajouter un mode 2 joueurs en ligne (socket ou websocket)
+- Historique des coups et bouton "annuler"
+- Meilleure UI pour le menu (souris, thème, animations)
 - Conteneuriser avec Docker (voir le projet transversal #25 de la roadmap)

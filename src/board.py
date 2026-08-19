@@ -30,6 +30,19 @@ class ConnectFour:
     def is_valid_column(self, col: int) -> bool:
         return 0 <= col < self.cols and self.grid[0][col] == EMPTY
 
+    def valid_columns(self) -> list[int]:
+        return [c for c in range(self.cols) if self.is_valid_column(c)]
+
+    def clone(self) -> "ConnectFour":
+        """Copie profonde du plateau, utilisée par l'IA pour simuler des coups."""
+        new_board = ConnectFour(rows=self.rows, cols=self.cols)
+        new_board.grid = [row.copy() for row in self.grid]
+        new_board.current_player = self.current_player
+        new_board.winner = self.winner
+        new_board.game_over = self.game_over
+        new_board.last_move = self.last_move
+        return new_board
+
     def is_full(self) -> bool:
         return all(self.grid[0][c] != EMPTY for c in range(self.cols))
 
